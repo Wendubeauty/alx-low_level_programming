@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
 /**
- * main - Entry point
+ *main - Entry point
+ *
  *Return: always 0 (success)
  */
 int main(void)
