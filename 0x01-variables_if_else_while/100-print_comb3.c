@@ -15,8 +15,11 @@ int main(void)
 			putchar('0' + n);
 			putchar('0' + m);
 			if (n != 8 || m != 9)
-				putchar(',');
-				putchar(' ');
+			{
+				/* Don't add "," after last combination */
+			}
+			putchar(',');
+			putchar(' ');
 		}
 	}
 	putchar('\n');
