@@ -12,16 +12,18 @@ int main(void)
 	{
 		for (m = n + 1; m <= 9; m++)
 		{
-			putchar('0' + n);
-			putchar('0' + m);
-			if (n != 8 || m != 9)
-			{
-				/* Don't add "," after last combination */
-			}
+			putchar(n + '0');
+			putchar(m + '0');
+
+			/* We don't need to print the ',' and ' ' after the last combination */
+			if (n == 8 && m == 9)
+				break;
+
 			putchar(',');
 			putchar(' ');
 		}
 	}
+
 	putchar('\n');
 	return (0);
 }
