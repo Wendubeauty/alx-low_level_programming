@@ -8,12 +8,12 @@ void puts2(char *str)
 {
 	int longi = 0;
 	int n = 0;
-	char *m = str;
+	char *y = str;
 	int l;
 
-	while (*m != '\0')
+	while (*y != '\0')
 	{
-		m++;
+		y++;
 		longi++;
 	}
 	n = longi - 1;
@@ -21,7 +21,7 @@ void puts2(char *str)
 	{
 		if (l % 2 == 0)
 		{
-			_putchar(str[0]);
+			_putchar(str[l]);
 		}
 	}
 	_putchar('\n');
