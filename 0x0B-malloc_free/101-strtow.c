@@ -1,5 +1,4 @@
 #include "main.h"
-#include <stdio.h>
 #include <stdlib.h>
 /**
  * count_words - Counts the number of words in a string
@@ -8,24 +7,22 @@
  */
 int count_words(char *str)
 {
-	int i, count = 0;
+	int i, c, w;
 
-	while (str[i] != '\0')
+	i = 0;
+	w = 0;
+
+	for (c = 0; str[c] != '\0'; c++)
 	{
-		if (str[i] == ' ')
+		if (str[c] == ' ')
+			i = 0;
+		else if (i == 0)
 		{
-			while (str[i] == ' ')
-				i++;
-		}
-		else
-		{
-			count++;
-			while (str[i] != ' ' && str[i] != '\0')
-				i++;
+			i = 1;
+			w++;
 		}
 	}
-
-	return (count);
+	return (w);
 }
 
 /**
@@ -35,44 +32,42 @@ int count_words(char *str)
  */
 char **strtow(char *str)
 {
-	char **words;
-	int i, j, k, word_count = 0;
+	char **matrix, *tmp;
+	int i, j = 0, len = 0, words, c = 0, start, end;
 
-	if (str == NULL || *str == '\0')
+	while (*(str + len))
+		len++;
+	words = count_words(str);
+	if (words == 0)
 		return (NULL);
 
-	word_count = count_words(str);
-	words = malloc((word_count + 1) * sizeof(char *));
-	if (words == NULL)
+	matrix = (char **) malloc(sizeof(char *) * (words + 1));
+	if (matrix == NULL)
 		return (NULL);
 
-	while (str[i] != '\0')
+	for (i = 0; i <= len; i++)
 	{
-		if (str[i] == ' ')
+		if (str[i] == ' ' || str[i] == '\0')
 		{
-			while (str[i] == ' ')
-				i++;
-		}
-		else
-		{
-			j = i;
-			while (str[j] != ' ' && str[j] != '\0')
-				j++;
-
-			words[k] = malloc((j - i + 1) * sizeof(char));
-			if (words[k] == NULL)
+			if (c)
 			{
-				while (k > 0)
-					free(words[--k]);
-				free(words);
-				return (NULL);
+				end = i;
+				tmp = (char *) malloc(sizeof(char) * (c + 1));
+				if (tmp == NULL)
+					return (NULL);
+				while (start < end)
+					*tmp++ = str[start++];
+				*tmp = '\0';
+				matrix[j] = tmp - c;
+				j++;
+				c = 0;
 			}
-			j = 0;
-			while (str[i] != ' ' && str[i] != '\0')
-				words[k][j++] = str[i++];
-			words[k++][j] = '\0';
 		}
+		else if (c++ == 0)
+			start = i;
 	}
-	words[k] = NULL;
-	return (words);
+
+	matrix[j] = NULL;
+
+	return (matrix);
 }
