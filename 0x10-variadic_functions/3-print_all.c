@@ -1,7 +1,6 @@
 #include "variadic_functions.h"
 #include <stdarg.h>
 #include <stdio.h>
-
 /**
  * print_all - Prints anything based on the given format.
  * @format: A list of types of arguments passed to the function.
@@ -46,9 +45,7 @@ void print_all(const char * const format, ...)
 
 		i++;
 	}
-
 	printf("\n");
-
 	va_end(args);
 }
 
