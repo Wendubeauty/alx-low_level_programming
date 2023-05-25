@@ -2,22 +2,6 @@
 #include <stdlib.h>
 
 /**
- * printOpcodes - Prints the opcodes of the main function.
- * @numBytes: The number of bytes to print.
- */
-void printOpcodes(int numBytes)
-{
-	unsigned char *mainAddr = (unsigned char *)printOpcodes;
-	int i;
-
-	for (i = 0; i < numBytes; i++)
-	{
-		printf("%02x ", mainAddr[i]);
-	}
-	printf("\n");
-}
-
-/**
  * main - Entry point of the program.
  * @argc: The number of command-line arguments.
  * @argv: An array of strings containing the command-line arguments.
@@ -27,21 +11,34 @@ void printOpcodes(int numBytes)
  */
 int main(int argc, char *argv[])
 {
+	int bytes, i;
+	char *arr;
+
 	if (argc != 2)
 	{
 		printf("Error\n");
-		return 1;
+		exit(1);
 	}
 
-	int numBytes = atoi(argv[1]);
+	bytes = atoi(argv[1]);
 
-	if (numBytes < 0)
+	if (bytes < 0)
 	{
 		printf("Error\n");
-		return 2;
+		exit(2);
 	}
 
-	printOpcodes(numBytes);
+	arr = (char *)main;
 
-	return 0;
+	for (i = 0; i < bytes; i++)
+	{
+		if (i == bytes - 1)
+		{
+			printf("%02hhx\n", arr[i]);
+			break;
+		}
+		printf("%02hhx ", arr[i]);
+	}
+	return (0);
 }
+
