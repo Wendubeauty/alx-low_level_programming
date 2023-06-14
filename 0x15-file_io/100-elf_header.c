@@ -1,35 +1,26 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include "main.h"
+#include <stdlib.h>
+#include <elf.h>
 
-#define ELF_HEADER_SIZE 64
+#define BUF_SIZE 64
 
 /**
- * error_exit - Prints error message to stderr and exits with failure status
- * @msg: The error message to display
- *
- * Description: This function prints an error message to stderr and
- *              exits the program with a failure status code (98).
+ * error_exit - Prints an error message to stderr and exits with status 98.
+ * @message: The error message to print.
  */
-void error_exit(char *msg)
+void error_exit(const char *message)
 {
-	dprintf(STDERR_FILENO, "%s\n", msg);
+	dprintf(STDERR_FILENO, "%s\n", message);
 	exit(98);
 }
 
 /**
- * display_elf_header - Displays the information in the ELF header
- * @header: Pointer to the ELF header structure
- *
- * Description: This function displays the information contained in the
- *              ELF header structure to the standard output.
+ * print_elf_header - Prints the ELF header information.
+ * @header: Pointer to the ELF header structure.
  */
-void display_elf_header(const Elf64_Ehdr *header)
+void print_elf_header(Elf64_Ehdr *header)
 {
 	int i;
 
@@ -72,35 +63,17 @@ void display_elf_header(const Elf64_Ehdr *header)
 	case ELFOSABI_SYSV:
 		printf("UNIX - System V\n");
 		break;
-	case ELFOSABI_HPUX:
-		printf("HP-UX\n");
-		break;
 	case ELFOSABI_NETBSD:
-		printf("NetBSD\n");
+		printf("UNIX - NetBSD\n");
 		break;
 	case ELFOSABI_LINUX:
-		printf("Linux\n");
+		printf("UNIX - Linux\n");
 		break;
 	case ELFOSABI_SOLARIS:
-		printf("Solaris\n");
-		break;
-	case ELFOSABI_IRIX:
-		printf("IRIX\n");
-		break;
-	case ELFOSABI_FREEBSD:
-		printf("FreeBSD\n");
-		break;
-	case ELFOSABI_TRU64:
-		printf("Tru64\n");
-		break;
-	case ELFOSABI_ARM:
-		printf("ARM\n");
-		break;
-	case ELFOSABI_STANDALONE:
-		printf("Standalone/embedded system\n");
+		printf("UNIX - Solaris\n");
 		break;
 	default:
-		printf("<unknown: %2.2x>\n", header->e_ident[EI_OSABI]);
+		printf("<unknown: %d>\n", header->e_ident[EI_OSABI]);
 		break;
 	}
 	printf("  ABI Version:                       %d\n",
@@ -109,7 +82,7 @@ void display_elf_header(const Elf64_Ehdr *header)
 	switch (header->e_type)
 	{
 	case ET_NONE:
-		printf("NONE (No file type)\n");
+		printf("NONE (Unknown type)\n");
 		break;
 	case ET_REL:
 		printf("REL (Relocatable file)\n");
@@ -132,32 +105,44 @@ void display_elf_header(const Elf64_Ehdr *header)
 }
 
 /**
- * main - Entry point
- * @argc: The argument count
- * @argv: The argument vector
+ * main - Entry point of the program.
+ * @argc: The number of command-line arguments.
+ * @argv: An array of command-line argument strings.
  *
- * Return: 0 on success, 98 on failure
+ * Return: 0 on success, 98 on failure.
  */
 int main(int argc, char *argv[])
 {
 	int fd;
 	Elf64_Ehdr header;
+	ssize_t bytes_read;
 
 	if (argc != 2)
-		error_exit("Usage: elf_header elf_filename");
+	{
+		dprintf(STDERR_FILENO, "Usage: %s elf_filename\n", argv[0]);
+		return (98);
+	}
 
 	fd = open(argv[1], O_RDONLY);
 	if (fd == -1)
 		error_exit("Error: Cannot open file");
 
-	if (read(fd, &header, ELF_HEADER_SIZE) != ELF_HEADER_SIZE)
-		error_exit("Error: Cannot read ELF header");
+	bytes_read = read(fd, &header, sizeof(header));
+	if (bytes_read == -1)
+		error_exit("Error: Cannot read file");
 
-	display_elf_header(&header);
+	if (bytes_read != sizeof(header) ||
+	    header.e_ident[EI_MAG0] != ELFMAG0 ||
+	    header.e_ident[EI_MAG1] != ELFMAG1 ||
+	    header.e_ident[EI_MAG2] != ELFMAG2 ||
+	    header.e_ident[EI_MAG3] != ELFMAG3)
+	{
+		error_exit("Error: Not an ELF file");
+	}
 
-	if (close(fd) == -1)
-		error_exit("Error: Cannot close file");
+	print_elf_header(&header);
 
+	close(fd);
 	return (0);
 }
 
