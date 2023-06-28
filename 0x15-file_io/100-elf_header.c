@@ -1,63 +1,107 @@
-#include "main.h"
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <elf.h>
 
 /**
- * error_exit - Prints an error message and exits with status code 98
- * @msg: The error message to print
+ * read_elf_header - Reads the ELF header from the file.
+ * @filename: The name of the ELF file.
+ * @header: A pointer to the ELF header structure to be filled.
+ *
+ * Return: 0 on success, -1 on failure.
  */
-void error_exit(char *msg)
+int read_elf_header(const char *filename, Elf64_Ehdr *header)
 {
-	dprintf(STDERR_FILENO, "%s\n", msg);
-	exit(98);
+	int fd;
+	ssize_t n;
+
+	fd = open(filename, O_RDONLY);
+	if (fd == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Cannot open file\n");
+		return (-1);
+	}
+
+	n = read(fd, header, sizeof(Elf64_Ehdr));
+	if (n == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Cannot read file\n");
+		close(fd);
+		return (-1);
+	}
+
+	close(fd);
+	return (0);
 }
 
 /**
- * print_magic - Prints the magic numbers of the ELF header
- * @header: Pointer to the ELF header structure
+ * print_elf_header - Prints the information contained in the ELF header.
+ * @header: A pointer to the ELF header structure.
  */
-void print_magic(char *header)
+void print_elf_header(const Elf64_Ehdr *header)
 {
 	int i;
 
-	printf("  Magic:   ");
-	for (i = 0; i < 16; i++)
-		printf("%02x ", (unsigned char)header[i]);
-	printf("\n");
-}
-
-/**
- * print_elf_header - Displays the information contained in the ELF header
- * @header: Pointer to the ELF header structure
- */
-void print_elf_header(Elf64_Ehdr *header)
-{
 	printf("ELF Header:\n");
-	print_magic((char *)header);
+	printf("  Magic:   ");
+	for (i = 0; i < EI_NIDENT; i++)
+		printf(" %02x", header->e_ident[i]);
+	printf("\n");
+
 	printf("  Class:                             ");
-	if (header->e_ident[EI_CLASS] == ELFCLASS32)
+	switch (header->e_ident[EI_CLASS])
+	{
+	case ELFCLASSNONE:
+		printf("none\n");
+		break;
+	case ELFCLASS32:
 		printf("ELF32\n");
-	else if (header->e_ident[EI_CLASS] == ELFCLASS64)
+		break;
+	case ELFCLASS64:
 		printf("ELF64\n");
-	else
+		break;
+	default:
 		printf("<unknown>\n");
+		break;
+	}
 
 	printf("  Data:                              ");
-	if (header->e_ident[EI_DATA] == ELFDATA2LSB)
+	switch (header->e_ident[EI_DATA])
+	{
+	case ELFDATANONE:
+		printf("none\n");
+		break;
+	case ELFDATA2LSB:
 		printf("2's complement, little endian\n");
-	else if (header->e_ident[EI_DATA] == ELFDATA2MSB)
+		break;
+	case ELFDATA2MSB:
 		printf("2's complement, big endian\n");
-	else
+		break;
+	default:
 		printf("<unknown>\n");
+		break;
+	}
 
-	printf("  Version:                           %d (current)\n", header->e_ident[EI_VERSION]);
+	printf("  Version:                           %u", header->e_ident[EI_VERSION]);
+	switch (header->e_ident[EI_VERSION])
+	{
+	case EV_CURRENT:
+		printf(" (current)\n");
+		break;
+	default:
+		printf("\n");
+		break;
+	}
 
 	printf("  OS/ABI:                            ");
 	switch (header->e_ident[EI_OSABI])
 	{
-	case ELFOSABI_SYSV:
+	case ELFOSABI_NONE:
 		printf("UNIX - System V\n");
 		break;
 	case ELFOSABI_HPUX:
-		printf("HP-UX\n");
+		printf("UNIX - HP-UX\n");
 		break;
 	case ELFOSABI_NETBSD:
 		printf("UNIX - NetBSD\n");
@@ -88,7 +132,7 @@ void print_elf_header(Elf64_Ehdr *header)
 		break;
 	}
 
-	printf("  ABI Version:                       %d\n", header->e_ident[EI_ABIVERSION]);
+	printf("  ABI Version:                       %u\n", header->e_ident[EI_ABIVERSION]);
 
 	printf("  Type:                              ");
 	switch (header->e_type)
@@ -113,42 +157,31 @@ void print_elf_header(Elf64_Ehdr *header)
 		break;
 	}
 
-	printf("  Entry point address:               0x%lx\n", header->e_entry);
+	printf("  Entry point address:               0x%lx\n", (unsigned long)header->e_entry);
 }
 
 /**
- * main - Entry point
- * @argc: Argument count
- * @argv: Argument vector
+ * main - Entry point.
+ * @argc: The number of command-line arguments.
+ * @argv: An array of command-line argument strings.
  *
- * Return: 0 on success, otherwise exit with error codes
+ * Return: 0 on success, 98 on failure.
  */
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
-	int fd;
 	Elf64_Ehdr header;
 
 	if (argc != 2)
-		error_exit("Usage: elf_header elf_filename");
+	{
+		dprintf(STDERR_FILENO, "Usage: %s elf_filename\n", argv[0]);
+		return (98);
+	}
 
-	fd = open(argv[1], O_RDONLY);
-	if (fd == -1)
-		error_exit("Error: Cannot open file");
-
-	if (read(fd, &header, sizeof(header)) != sizeof(header))
-		error_exit("Error: Cannot read ELF header");
-
-	if (header.e_ident[EI_MAG0] != ELFMAG0 ||
-	    header.e_ident[EI_MAG1] != ELFMAG1 ||
-	    header.e_ident[EI_MAG2] != ELFMAG2 ||
-	    header.e_ident[EI_MAG3] != ELFMAG3)
-		error_exit("Error: Not an ELF file");
+	if (read_elf_header(argv[1], &header) == -1)
+		return (98);
 
 	print_elf_header(&header);
 
-	if (close(fd) == -1)
-		error_exit("Error: Cannot close file");
-
-	return 0;
+	return (0);
 }
 
